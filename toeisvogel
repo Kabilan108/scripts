@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ ! -f "$1" ]; then
+    echo "File not found!"
+    exit 1
+fi
+
+file_name=$(basename "$1")
+output_file="${file_name%.*}.pdf"
+
+if [ -n "$2" ]; then
+    mkdir -p "$2"
+    output_file="$2/$output_file"
+fi
+
+if [ -n "$3" ]; then
+    img_path="$3"
+    temp_file=$(mktemp)
+
+    while IFS= read -r line; do
+        echo "$line" | sed -E 's|\!\[\[([^]]+)\]\]|\!\[\]\('"$img_path"'\/\1\)|g' >> "$temp_file"
+    done < "$1"
+fi
+
+pandoc "$temp_file" -o "${output_file}" \
+    --from markdown \
+    --template eisvogel \
+    --listings \
+    --variable mainfont="Arial" \
+    --variable fontsize=11pt \
+    --variable geometry:margin=0.8in
+
+rm "$temp_file"
+
